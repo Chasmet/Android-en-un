@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Application Tout-en-Un</title>
+  <style>
+    /* Réinitialisation et style de base */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+    }
+    header {
+      background: #4CAF50;
+      color: white;
+      padding: 1em;
+      text-align: center;
+    }
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      background: #333;
+    }
+    nav button {
+      background: #333;
+      color: white;
+      border: none;
+      padding: 1em;
+      flex: 1 1 100px;
+      margin: 0.2em;
+      cursor: pointer;
+    }
+    nav button:hover {
+      background: #555;
+    }
+    .container {
+      padding: 1em;
+    }
+    .section {
+      display: none;
+      padding: 1em;
+      background: white;
+      margin: 1em 0;
+      border-radius: 8px;
+    }
+    .active {
+      display: block;
+    }
+    /* Responsive */
+    @media (min-width: 600px) {
+      nav button {
+        flex: 1 1 150px;
+      }
+    }
+    /* Overlay de sécurité */
+    #securityOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 999;
+    }
+    #securityOverlay input[type="password"] {
+      padding: 0.5em;
+      font-size: 1em;
+      margin-top: 0.5em;
+    }
+    #securityOverlay button {
+      padding: 0.5em 1em;
+      font-size: 1em;
+      margin-top: 0.5em;
+    }
+  </style>
+</head>
+<body>
+  <!-- Overlay de sécurité -->
+  <div id="securityOverlay">
+    <h2>Entrer le mot de passe</h2>
+    <input type="password" id="passwordInput" placeholder="Mot de passe">
+    <button onclick="checkPassword()">Valider</button>
+    <p id="errorMsg" style="color: red;"></p>
+  </div>
+
+  <header>
+    <h1>Application Tout-en-Un</h1>
+  </header>
+
+  <nav>
+    <button onclick="showSection('mail')">Mail</button>
+    <button onclick="showSection('notes')">Bloc-notes</button>
+    <button onclick="showSection('social')">Réseaux Sociaux</button>
+    <button onclick="showSection('messaging')">Messagerie</button>
+    <button onclick="showSection('files')">Fichiers</button>
+    <button onclick="showSection('media')">Multimédia</button>
+    <button onclick="showSection('dashboard')">Dashboard</button>
+  </nav>
+
+  <div class="container">
+    <!-- Section Mail -->
+    <div id="mail" class="section">
+      <h2>Boîte Mail</h2>
+      <p>Accédez à vos mails via :</p>
+      <ul>
+        <li><a href="https://mail.google.com" target="_blank">Gmail</a></li>
+        <li><a href="https://outlook.live.com" target="_blank">Outlook</a></li>
+      </ul>
+    </div>
+
+    <!-- Section Bloc-notes -->
+    <div id="notes" class="section">
+      <h2>Bloc-notes</h2>
+      <textarea id="noteText" rows="10" style="width:100%;" placeholder="Écrivez vos notes ici..."></textarea>
+      <br>
+      <button onclick="saveNote()">Sauvegarder</button>
+      <button onclick="loadNote()">Charger</button>
+      <p id="saveMsg" style="color: green;"></p>
+    </div>
+
+    <!-- Section Réseaux Sociaux -->
+    <div id="social" class="section">
+      <h2>Réseaux Sociaux</h2>
+      <ul>
+        <li><a href="https://www.instagram.com" target="_blank">Instagram</a></li>
+        <li><a href="https://www.tiktok.com" target="_blank">TikTok</a></li>
+        <li><a href="https://www.facebook.com" target="_blank">Facebook</a></li>
+        <li><a href="https://twitter.com" target="_blank">Twitter</a></li>
+        <li><a href="https://www.youtube.com" target="_blank">YouTube</a></li>
+        <li><a href="https://www.snapchat.com" target="_blank">Snapchat</a></li>
+      </ul>
+    </div>
+
+    <!-- Section Messagerie -->
+    <div id="messaging" class="section">
+      <h2>Messageries</h2>
+      <ul>
+        <li><a href="https://web.whatsapp.com" target="_blank">WhatsApp</a></li>
+        <li><a href="https://www.messenger.com" target="_blank">Messenger</a></li>
+        <li><a href="https://web.telegram.org" target="_blank">Telegram</a></li>
+      </ul>
+    </div>
+
+    <!-- Section Fichiers -->
+    <div id="files" class="section">
+      <h2>Gestion de Fichiers</h2>
+      <p>Accéder aux fichiers locaux :</p>
+      <input type="file" id="fileInput" multiple>
+      <div id="fileList"></div>
+    </div>
+
+    <!-- Section Multimédia -->
+    <div id="media" class="section">
+      <h2>Lecteur Multimédia</h2>
+      <p>Ouvrir un fichier audio ou vidéo :</p>
+      <input type="file" id="mediaFileInput" accept="audio/*,video/*">
+      <div id="mediaPlayerContainer"></div>
+      <hr>
+      <p>Exemple de contenu intégré :</p>
+      <p>Audio :</p>
+      <audio controls>
+        <source src="sample-audio.mp3" type="audio/mpeg">
+        Votre navigateur ne supporte pas l'audio.
+      </audio>
+      <p>Vidéo :</p>
+      <video controls width="100%">
+        <source src="sample-video.mp4" type="video/mp4">
+        Votre navigateur ne supporte pas la vidéo.
+      </video>
+    </div>
+
+    <!-- Section Dashboard -->
+    <div id="dashboard" class="section">
+      <h2>Tableau de Bord</h2>
+      <p>Notifications (simulées) :</p>
+      <ul>
+        <li>Notification 1</li>
+        <li>Notification 2</li>
+      </ul>
+      <p>Calendrier :</p>
+      <input type="date">
+      <p>Tâches du jour :</p>
+      <ul>
+        <li>Tâche 1</li>
+        <li>Tâche 2</li>
+      </ul>
+      <p>Météo :</p>
+      <p>--°C, Temps stable (statique)</p>
+    </div>
+  </div>
+
+  <script>
+    // Vérification du mot de passe (modifie le mot de passe ici si besoin)
+    const correctPassword = "1234";
+    function checkPassword() {
+      const input = document.getElementById('passwordInput').value;
+      if (input === correctPassword) {
+        document.getElementById('securityOverlay').style.display = 'none';
+      } else {
+        document.getElementById('errorMsg').innerText = "Mot de passe incorrect.";
+      }
+    }
+
+    // Affichage des sections
+    function showSection(id) {
+      const sections = document.querySelectorAll('.section');
+      sections.forEach(section => section.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    // Sauvegarde et chargement des notes
+    function saveNote() {
+      const note = document.getElementById('noteText').value;
+      localStorage.setItem('myNote', note);
+      document.getElementById('saveMsg').innerText = "Note sauvegardée !";
+    }
+    function loadNote() {
+      const note = localStorage.getItem('myNote');
+      if(note !== null) {
+        document.getElementById('noteText').value = note;
+        document.getElementById('saveMsg').innerText = "Note chargée !";
+      } else {
+        document.getElementById('saveMsg').innerText = "Aucune note sauvegardée.";
+      }
+    }
+
+    // Affichage des fichiers sélectionnés dans la section Fichiers
+    document.getElementById('fileInput').addEventListener('change', function(){
+      const files = this.files;
+      let output = '<ul>';
+      for(let i = 0; i < files.length; i++){
+        output += '<li>' + files[i].name + '</li>';
+      }
+      output += '</ul>';
+      document.getElementById('fileList').innerHTML = output;
+    });
+
+    // Gestion de l'ouverture de fichiers audio/vidéo dans la section Multimédia
+    document.getElementById('mediaFileInput').addEventListener('change', function(){
+      const file = this.files[0];
+      if(file) {
+        const fileURL = URL.createObjectURL(file);
+        const container = document.getElementById('mediaPlayerContainer');
+        container.innerHTML = ""; // Réinitialiser le conteneur
+        // Détecter le type de fichier pour choisir audio ou vidéo
+        if(file.type.startsWith("audio/")) {
+          const audioPlayer = document.createElement("audio");
+          audioPlayer.controls = true;
+          const source = document.createElement("source");
+          source.src = fileURL;
+          source.type = file.type;
+          audioPlayer.appendChild(source);
+          container.appendChild(audioPlayer);
+        } else if(file.type.startsWith("video/")) {
+          const videoPlayer = document.createElement("video");
+          videoPlayer.controls = true;
+          videoPlayer.width = "100%";
+          const source = document.createElement("source");
+          source.src = fileURL;
+          source.type = file.type;
+          videoPlayer.appendChild(source);
+          container.appendChild(videoPlayer);
+        } else {
+          container.innerText = "Type de fichier non supporté.";
+        }
+      }
+    });
+  </script>
+</body>
+</html>
