@@ -1,10 +1,6 @@
 name: Build Mime Copy APK
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - mime-copy-app
   pull_request:
     branches:
       - main
