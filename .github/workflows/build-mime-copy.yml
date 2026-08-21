@@ -5,9 +5,9 @@ on:
   push:
     branches:
       - mime-copy-app
-    paths:
-      - 'mime-copy-app.tar.gz.b64'
-      - '.github/workflows/build-mime-copy.yml'
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
