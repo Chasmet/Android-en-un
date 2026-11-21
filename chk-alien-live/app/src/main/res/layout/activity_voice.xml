@@ -1,0 +1,11 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+ android:layout_width="match_parent" android:layout_height="match_parent" android:background="#090918" android:fillViewport="true">
+ <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="22dp">
+  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="VOIX EXTRATERRESTRE" android:textSize="24sp" android:textStyle="bold" android:textColor="#EACFFF" android:paddingBottom="20dp"/>
+  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Voix calculée directement sur le téléphone. Choisis un effet et parle pour écouter le résultat." android:textColor="#FFFFFF" android:textSize="16sp" android:paddingBottom="16dp"/>
+  <Spinner android:id="@+id/voicePresets" android:layout_width="match_parent" android:layout_height="62dp"/>
+  <Button android:id="@+id/voiceToggle" android:layout_width="match_parent" android:layout_height="65dp" android:text="Tester ma voix extraterrestre" android:textAllCaps="false" android:background="@drawable/btn_primary" android:textColor="#FFFFFF"/>
+  <TextView android:id="@+id/voiceState" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="14dp" android:text="Effet vocal arrêté" android:textColor="#B7ECD8" android:textSize="15sp"/>
+  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFCF9C" android:textSize="15sp" android:paddingTop="20dp" android:text="IMPORTANT : Android ne permet pas de remplacer directement le microphone TikTok. Pour tenter une diffusion de cet effet en LIVE, active l'audio interne / son du jeu dans TikTok, désactive le micro TikTok et écoute le résultat depuis un autre appareil. Cela dépend des options TikTok et du téléphone ; ce n’est pas garanti. Utilise un casque pour éviter l'écho et le larsen."/>
+ </LinearLayout>
+</ScrollView>

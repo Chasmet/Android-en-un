@@ -1,4 +1,4 @@
-name: CHK Alien Live - APK Android
+name: CHK Alien Live - APK Android (voix 0.4)
 on:
   push:
     branches: [chk-alien-live-build-20261121]
@@ -26,10 +26,6 @@ jobs:
           gradle-version: '8.7'
       - name: SDK Android 34
         run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
-      - name: Ressources graphiques provisoires hors ligne
-        run: |
-          python3 -m pip install --quiet pillow
-          python3 chk-alien-live/tools/make_assets.py
       - name: Contrôles sources
         working-directory: chk-alien-live
         run: |
@@ -42,6 +38,6 @@ jobs:
       - name: Archiver le véritable APK
         uses: actions/upload-artifact@v4
         with:
-          name: CHK-Alien-Live-APK-Android
+          name: CHK-Alien-Live-APK-Android-v0.4
           path: chk-alien-live/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error

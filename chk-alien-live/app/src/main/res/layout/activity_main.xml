@@ -18,6 +18,8 @@
             android:text="Préparation caméra…" android:textColor="#D5C9E7" android:gravity="center" android:textSize="12sp" android:padding="4dp"/>
         <Button android:id="@+id/buttonLive" android:layout_width="match_parent" android:layout_height="50dp"
             android:text="MODE LIVE — PLEIN ÉCRAN" android:background="@drawable/btn_primary" android:textAllCaps="false" android:textColor="#FFFFFF" />
+        <Button android:id="@+id/buttonVoice" android:layout_width="match_parent" android:layout_height="50dp"
+            android:text="Activer la voix extraterrestre — appui long : réglages" android:textAllCaps="false" android:textColor="#FFFFFF" />
         <LinearLayout android:layout_width="match_parent" android:layout_height="62dp" android:gravity="center" android:orientation="horizontal">
             <Button android:id="@+id/buttonAlien" android:layout_width="0dp" android:layout_height="50dp" android:layout_weight="1"
                 android:text="Personnages" android:textAllCaps="false" android:textColor="#FFFFFF" />

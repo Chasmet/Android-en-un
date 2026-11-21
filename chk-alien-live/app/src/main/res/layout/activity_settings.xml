@@ -38,7 +38,7 @@
             android:textColor="#FFFFFF" android:checked="true" />
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
             android:paddingTop="14dp"
-            android:text="Le microphone reste géré par TikTok. Cette version anime les décors, suit la tête et estime les mouvements de bouche par caméra. Ce suivi est approximatif, sans transcription ni accès au micro. Les personnages restent des portraits 2D avec une animation proxy : un visage 3D photoréaliste exige un modèle riggé."
+            android:text="La transformation de la voix est proposée dans le nouvel écran Voix. Elle diffuse l’effet sur la sortie audio du téléphone et ne remplace PAS automatiquement le microphone TikTok. Cette version anime les décors, suit la tête et estime les mouvements de bouche par caméra. Ce suivi est approximatif, sans transcription ni accès au micro. Les personnages restent des portraits 2D avec une animation proxy : un visage 3D photoréaliste exige un modèle riggé."
             android:textColor="#C8BDD8" android:textSize="14sp" />
         <TextView android:id="@+id/version" android:layout_width="match_parent" android:layout_height="70dp"
             android:gravity="center_vertical" android:textColor="#B89ACF" android:textSize="14sp" />

@@ -9,10 +9,15 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
+import android.widget.Button;
+import android.widget.Toast;
 
 public final class MainActivity extends Activity {
     private AlienStageView stage;
     private FaceTracker tracker;
+    private VoiceEngine voice;
+    private Button voiceButton;
+    private boolean voiceRequested=false;
     private View controls,header,hint;
     private boolean full=false;
     private TextView status;
@@ -27,6 +32,15 @@ public final class MainActivity extends Activity {
         findViewById(R.id.buttonLive).setOnClickListener(v->setLive(true));
         findViewById(R.id.buttonAlien).setOnClickListener(v->openLibrary(false));
         findViewById(R.id.buttonScene).setOnClickListener(v->openLibrary(true));
+        voiceButton=findViewById(R.id.buttonVoice);
+        voice=new VoiceEngine(message->runOnUiThread(()->{
+            if(!isFinishing()) Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
+        }));
+        voiceButton.setOnClickListener(v->{
+            if(voiceRequested){voiceRequested=false;voice.stop();voiceButton.setText("Activer la voix extraterrestre — appui long : réglages");}
+            else {voiceRequested=true;startVoice();}
+        });
+        voiceButton.setOnLongClickListener(v->{startActivity(new Intent(this,VoiceActivity.class));return true;});
         findViewById(R.id.buttonSettings).setOnClickListener(v->startActivity(new Intent(this,SettingsActivity.class)));
         stage.setOnLongClickListener(v->{
             if(full){setLive(false);return true;}
@@ -36,6 +50,14 @@ public final class MainActivity extends Activity {
             @Override public void onPose(float x,float y,float roll,float mouth){runOnUiThread(()->stage.updatePose(x,y,roll,mouth));}
             @Override public void onStatus(String message){runOnUiThread(()->status.setText(message));}
         });
+    }
+    private void startVoice(){
+        if(Build.VERSION.SDK_INT>=23&&checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){
+            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},101);return;
+        }
+        voice.setPreset(AlienData.prefs(this).getInt("voicePreset",0));
+        if(voice.start())voiceButton.setText("Arrêter la voix extraterrestre — appui long : réglages");
+        else voiceRequested=false;
     }
     private void openLibrary(boolean scenes){
         Intent intent=new Intent(this,LibraryActivity.class);
@@ -70,6 +92,7 @@ public final class MainActivity extends Activity {
     @Override protected void onResume(){
         super.onResume();stage.reload();
         tracker.setSaver(AlienData.prefs(this).getBoolean("saveBattery",true));
+        if(voiceRequested) startVoice();
         if(Build.VERSION.SDK_INT>=23&&checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED){
             requestPermissions(new String[]{Manifest.permission.CAMERA},100);
         }else{tracker.start();}
@@ -82,9 +105,15 @@ public final class MainActivity extends Activity {
     }
     @Override public void onRequestPermissionsResult(int request,String[] perms,int[] results){
         super.onRequestPermissionsResult(request,perms,results);
-        if(request==100&&results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED)tracker.start();
-        else status.setText("Autorise la caméra pour animer le personnage");
+        if(request==100){
+            if(results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED)tracker.start();
+            else status.setText("Autorise la caméra pour animer le personnage");
+        }else if(request==101){
+            if(results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED&&voiceRequested)startVoice();
+            else {voiceRequested=false;status.setText("Autorise le micro pour modifier la voix");}
+        }
     }
-    @Override protected void onPause(){tracker.stop();super.onPause();}
+    @Override protected void onPause(){tracker.stop();if(voice!=null)voice.stop();super.onPause();}
+    @Override protected void onDestroy(){if(voice!=null)voice.stop();super.onDestroy();}
     @Override public void onBackPressed(){if(full)setLive(false);else super.onBackPressed();}
 }
