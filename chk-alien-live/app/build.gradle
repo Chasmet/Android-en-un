@@ -8,8 +8,8 @@ android {
         applicationId 'fr.chk.alienlive'
         minSdk 21
         targetSdk 34
-        versionCode (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
-        versionName (System.getenv('RELEASE_VERSION') ?: '0.3.0').replace('v','')
+        versionCode = Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '1')
+        versionName = (System.getenv('RELEASE_VERSION') ?: '0.3.0').replace('v','')
     }
     buildFeatures { buildConfig true }
     compileOptions {
