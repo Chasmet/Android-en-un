@@ -22,21 +22,24 @@ import java.util.Locale;
 
 /** Lecture HTTPS d'un manifeste statique GitHub Release. Installation demandée à l'utilisateur. */
 public final class UpdateManager {
-    private static final String META="https://github.com/Chasmet/CHK-Alien-Live/releases/latest/download/update.json";
+    private static final String META="https://raw.githubusercontent.com/Chasmet/Android-en-un/chk-alien-live-build-20261121/chk-alien-live/update.json";
     private UpdateManager() { }
     public static void check(Activity activity,boolean explicit){
         new Thread(()->{
             try {
                 HttpURLConnection c=(HttpURLConnection)new URL(META).openConnection();
                 c.setConnectTimeout(8000);c.setReadTimeout(8000);c.setRequestProperty("User-Agent","CHK-Alien-Live");
-                if(c.getResponseCode()!=200)throw new Exception("Aucune release publiée");
+                int code=c.getResponseCode();
+                if(code!=200)throw new Exception("Canal majauto non publié (HTTP "+code+")");
                 byte[] bytes=read(c.getInputStream(),128000);c.disconnect();
                 JSONObject data=new JSONObject(new String(bytes,"UTF-8"));
                 int remote=data.getInt("versionCode");
                 String url=data.getString("apkUrl");
+                if(!activity.getPackageName().equals(data.optString("packageName","")))
+                    throw new Exception("Version incompatible : réinstallation nécessaire");
                 String sha256=data.optString("sha256","").toLowerCase(Locale.ROOT);
                 if(!sha256.matches("[a-f0-9]{64}"))throw new Exception("Contrôle d'intégrité absent");
-                if(!url.startsWith("https://github.com/Chasmet/CHK-Alien-Live/releases/download/"))throw new Exception("URL de version invalide");
+                if(!url.startsWith("https://github.com/Chasmet/Android-en-un/releases/download/chk-alien-live-v"))throw new Exception("URL de version invalide");
                 activity.runOnUiThread(()->{
                     if(remote>BuildConfig.VERSION_CODE){
                         new AlertDialog.Builder(activity).setTitle("Nouvelle version disponible")

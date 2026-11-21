@@ -1,4 +1,4 @@
-name: CHK Alien Live - APK Android (voix 0.4)
+name: CHK Alien Live - Majauto APK
 on:
   push:
     branches: [chk-alien-live-build-20261121]
@@ -7,11 +7,11 @@ on:
       - ".github/workflows/chk-alien-live-build.yml"
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -19,25 +19,94 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
-        with:
-          packages: 'platform-tools'
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: SDK Android 34
+      - name: Android SDK 34
         run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
-      - name: Contrôles sources
+      - name: Preparation
+        run: echo "RELEASE_VERSION=0.5.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+      - name: Sources et assembleDebug
         working-directory: chk-alien-live
         run: |
           python3 tools/verify_source.py
           javac tools/ParseJavaSources.java
           java -cp tools ParseJavaSources
-      - name: Assembler APK Android
+          bash ./gradlew --no-daemon assembleDebug
+      - name: Signature permanente obligatoire
+        env:
+          KEY_B64: ${{ secrets.CHK_ALIEN_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.CHK_ALIEN_KEYSTORE_PASSWORD }}
+          ALIAS: ${{ secrets.CHK_ALIEN_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.CHK_ALIEN_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$KEY_B64" || -z "$STORE_PASSWORD" || -z "$ALIAS" || -z "$KEY_PASSWORD" ]]; then
+            echo "::error::Configurer les quatre secrets CHK_ALIEN_* dans les parametres GitHub Actions. Publication bloquee sans signature stable."
+            exit 1
+          fi
+          printf '%s' "$KEY_B64" | base64 -d > "$RUNNER_TEMP/chk-alien-signing.jks"
+          chmod 600 "$RUNNER_TEMP/chk-alien-signing.jks"
+          echo "APK_KEYSTORE_PATH=$RUNNER_TEMP/chk-alien-signing.jks" >> "$GITHUB_ENV"
+      - name: AssembleRelease signe
         working-directory: chk-alien-live
-        run: bash ./gradlew --no-daemon --stacktrace assembleDebug
-      - name: Archiver le véritable APK
-        uses: actions/upload-artifact@v4
+        env:
+          APK_KEYSTORE_PASSWORD: ${{ secrets.CHK_ALIEN_KEYSTORE_PASSWORD }}
+          APK_KEY_ALIAS: ${{ secrets.CHK_ALIEN_KEY_ALIAS }}
+          APK_KEY_PASSWORD: ${{ secrets.CHK_ALIEN_KEY_PASSWORD }}
+        run: bash ./gradlew --no-daemon --stacktrace assembleRelease
+      - name: Verification package et signature
+        working-directory: chk-alien-live
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --print-certs --verbose "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='fr.chk.alienlive'"
+      - name: Generer APK et update.json
+        working-directory: chk-alien-live
+        run: |
+          python3 - <<'PY'
+          import os,json,hashlib,shutil
+          from pathlib import Path
+          version=os.environ['RELEASE_VERSION']
+          tag='chk-alien-live-v'+version
+          name='CHK-Alien-Live-v'+version+'.apk'
+          d=Path('dist')
+          d.mkdir(exist_ok=True)
+          shutil.copy2('app/build/outputs/apk/release/app-release.apk',d/name)
+          meta={'versionCode':10000+int(os.environ['GITHUB_RUN_NUMBER']),'versionName':version,'packageName':'fr.chk.alienlive','apkUrl':'https://github.com/'+os.environ['GITHUB_REPOSITORY']+'/releases/download/'+tag+'/'+name,'sha256':hashlib.sha256((d/name).read_bytes()).hexdigest()}
+          (d/'update.json').write_text(json.dumps(meta,indent=2)+'\n',encoding='utf-8')
+          (d/'tag.txt').write_text(tag)
+          PY
+      - uses: actions/upload-artifact@v4
         with:
-          name: CHK-Alien-Live-APK-Android-v0.4
-          path: chk-alien-live/app/build/outputs/apk/debug/*.apk
+          name: CHK-Alien-Live-APK-signe
+          path: chk-alien-live/dist/*.apk
           if-no-files-found: error
+      - name: Publier Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="$(cat chk-alien-live/dist/tag.txt)"
+          APK="$(find chk-alien-live/dist -name '*.apk' -print -quit)"
+          META=chk-alien-live/dist/update.json
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" "$META" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" "$APK" "$META" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "CHK Alien Live $RELEASE_VERSION" --notes "Release Android signee et mise a jour integree"
+          fi
+      - name: Publier manifeste pour majauto
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          P=chk-alien-live/update.json
+          SHA="$(gh api "repos/$GITHUB_REPOSITORY/contents/$P?ref=$GITHUB_REF_NAME" --jq .sha 2>/dev/null || true)"
+          DATA="$(base64 -w0 < chk-alien-live/dist/update.json)"
+          if [[ -n "$SHA" ]]; then
+            gh api -X PUT "repos/$GITHUB_REPOSITORY/contents/$P" -f message="chore: majauto manifest [skip ci]" -f branch="$GITHUB_REF_NAME" -f sha="$SHA" -f content="$DATA"
+          else
+            gh api -X PUT "repos/$GITHUB_REPOSITORY/contents/$P" -f message="chore: publish majauto manifest [skip ci]" -f branch="$GITHUB_REF_NAME" -f content="$DATA"
+          fi
