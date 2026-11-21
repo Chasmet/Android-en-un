@@ -1,0 +1,45 @@
+name: CHK Alien Live - APK Android
+on:
+  push:
+    branches: [chk-alien-live-build-20261121]
+    paths:
+      - "chk-alien-live/**"
+      - ".github/workflows/chk-alien-live-build.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: SDK Android 34
+        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
+      - name: Ressources graphiques provisoires hors ligne
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 chk-alien-live/tools/make_assets.py
+      - name: Contrôles sources
+        working-directory: chk-alien-live
+        run: |
+          python3 tools/verify_source.py
+          javac tools/ParseJavaSources.java
+          java -cp tools ParseJavaSources
+      - name: Assembler APK Android
+        working-directory: chk-alien-live
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+      - name: Archiver le véritable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CHK-Alien-Live-APK-Android
+          path: chk-alien-live/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

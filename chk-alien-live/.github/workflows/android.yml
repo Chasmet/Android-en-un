@@ -1,0 +1,98 @@
+name: APK CHK Alien Live et MAJ Auto
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer les sources
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: SDK Android
+        uses: android-actions/setup-android@v3
+      - name: Gradle 8.7
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Installer Android SDK 34
+        run: sdkmanager 'platforms;android-34' 'build-tools;34.0.0'
+
+      - name: Vérifications sources et ressources
+        run: |
+          python3 tools/verify_source.py
+          javac tools/ParseJavaSources.java
+          java -cp tools ParseJavaSources
+
+      - name: Test compilation APK debug
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+      - name: Conserver APK debug dans Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: CHK-Alien-Live-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Préparer signature permanente
+        id: signing
+        env:
+          KEYSTORE_B64: ${{ secrets.APK_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo 'Signature non configurée : pas de Release automatique.'
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+          else
+            printf '%s' "$KEYSTORE_B64" | base64 -d > signing.jks
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Calculer la version automatique
+        id: version
+        if: steps.signing.outputs.ready == 'true'
+        run: echo "tag=v0.3.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Compiler APK de mise à jour signé
+        if: steps.signing.outputs.ready == 'true'
+        env:
+          APK_KEYSTORE_PATH: signing.jks
+          APK_KEYSTORE_PASSWORD: ${{ secrets.APK_KEYSTORE_PASSWORD }}
+          APK_KEY_ALIAS: ${{ secrets.APK_KEY_ALIAS }}
+          APK_KEY_PASSWORD: ${{ secrets.APK_KEY_PASSWORD }}
+          RELEASE_VERSION: ${{ steps.version.outputs.tag }}
+        run: ./gradlew --no-daemon --stacktrace assembleRelease
+
+      - name: Fabriquer le manifeste majauto avec SHA-256
+        if: steps.signing.outputs.ready == 'true'
+        env:
+          VERSION_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          CHECKSUM=$(sha256sum app/build/outputs/apk/release/app-release.apk | awk '{print $1}')
+          printf '{"versionCode":%s,"versionName":"%s","apkUrl":"https://github.com/Chasmet/CHK-Alien-Live/releases/download/%s/app-release.apk","sha256":"%s"}\n' \
+            "$GITHUB_RUN_NUMBER" "${VERSION_TAG#v}" "$VERSION_TAG" "$CHECKSUM" > update.json
+
+      - name: Publication automatique de la Release
+        if: steps.signing.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          gh release create "$VERSION_TAG" \
+            app/build/outputs/apk/release/app-release.apk \
+            update.json \
+            --title "CHK Alien Live ${VERSION_TAG}" \
+            --notes "APK Android signé. Conserve les données si la clé de signature et l'identifiant de l'application ne changent pas." \
+            --latest
+
+      - name: Effacer la clé de signature temporaire
+        if: always()
+        run: rm -f signing.jks
