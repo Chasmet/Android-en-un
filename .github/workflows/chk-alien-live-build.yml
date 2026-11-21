@@ -38,7 +38,7 @@ jobs:
           java -cp tools ParseJavaSources
       - name: Assembler APK Android
         working-directory: chk-alien-live
-        run: ./gradlew --no-daemon --stacktrace assembleDebug
+        run: bash ./gradlew --no-daemon --stacktrace assembleDebug
       - name: Archiver le véritable APK
         uses: actions/upload-artifact@v4
         with:
