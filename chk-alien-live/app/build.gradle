@@ -11,6 +11,11 @@ android {
         versionCode = 10000 + Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '1')
         versionName = (System.getenv('RELEASE_VERSION') ?: '0.5.0').replace('v','')
     }
+    flavorDimensions 'tracking'
+    productFlavors {
+        compat { dimension 'tracking'; minSdk 21 }
+        honor { dimension 'tracking'; minSdk 23 }
+    }
     buildFeatures { buildConfig true }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -37,4 +42,7 @@ android {
     lint { abortOnError true }
 }
 
-dependencies { implementation 'androidx.core:core:1.13.1' }
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
+    honorImplementation 'com.google.mlkit:face-detection:16.1.7'
+}
