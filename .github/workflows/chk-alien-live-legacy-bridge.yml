@@ -1,0 +1,31 @@
+name: CHK Alien Live - passerelle de mise a jour 0.5 vers 0.6
+on:
+  push:
+    branches: [chk-alien-live-build-20261121]
+    paths:
+      - '.github/workflows/chk-alien-live-legacy-bridge.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recopier exclusivement l APK officiel signe
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=chk-alien-live-v0.6.3
+          FILE=CHK-Alien-Live-v0.6.3.apk
+          SOURCE='https://github.com/Chasmet/Avatar-alien-pluthori-n-/releases/download/chk-alien-live-v0.6.3/CHK-Alien-Live-v0.6.3.apk'
+          curl --fail --location --retry 3 --retry-delay 2 "$SOURCE" --output "$FILE"
+          echo '11e1f937837dbabaf204470443efceb93ce3fb469b1eb4225def1113bf43507b  CHK-Alien-Live-v0.6.3.apk' | sha256sum --check
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$TAG" "$FILE" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" "$FILE" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'CHK Alien Live v0.6.3 - passerelle ancienne application' --notes 'Passerelle UNIQUE depuis CHK Alien Live 0.5.11 vers le depot officiel Chasmet/Avatar-alien-pluthori-n-. APK signe identique SHA-256 a la publication officielle. Les mises a jour suivantes passent uniquement par le depot officiel.'
+          fi
+          echo 'Passerelle prete.'
