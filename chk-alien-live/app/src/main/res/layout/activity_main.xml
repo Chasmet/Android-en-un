@@ -25,6 +25,8 @@
                 android:text="Personnages" android:textAllCaps="false" android:textColor="#FFFFFF" />
             <Button android:id="@+id/buttonScene" android:layout_width="0dp" android:layout_height="50dp" android:layout_weight="1"
                 android:text="Décors" android:textAllCaps="false" android:textColor="#FFFFFF" />
+            <Button android:id="@+id/buttonVoiceMenu" android:layout_width="0dp" android:layout_height="50dp" android:layout_weight="1"
+                android:text="Voix" android:textAllCaps="false" android:textColor="#FFFFFF" />
             <Button android:id="@+id/buttonSettings" android:layout_width="0dp" android:layout_height="50dp" android:layout_weight="1"
                 android:text="Réglages" android:textAllCaps="false" android:textColor="#FFFFFF" />
         </LinearLayout>

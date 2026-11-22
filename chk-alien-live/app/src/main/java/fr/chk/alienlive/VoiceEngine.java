@@ -20,6 +20,16 @@ public final class VoiceEngine {
     private final Listener listener;
     private volatile boolean running;
     private volatile int preset = 0;
+    private volatile float depth=0.75f, effectMix=0.85f, level=0f;
+    public static final String[] PRESETS = {
+        "Pluthor — voix abyssale","Pluthor — souverain","Annunaki — métal",
+        "Spectral — aigu","Voix normale (contrôle)","Colosse — très grave",
+        "Reptilien — rauque","Oracle — mystérieux"
+    };
+    public void setDepth(float v){depth=Math.max(0f,Math.min(1f,v));}
+    public void setMix(float v){effectMix=Math.max(0f,Math.min(1f,v));}
+    public float getLevel(){return level;}
+
     private Thread worker;
     private AudioRecord input;
     private AudioTrack output;
@@ -31,7 +41,7 @@ public final class VoiceEngine {
 
     public VoiceEngine(Listener listener) { this.listener = listener; }
     public synchronized boolean isRunning() { return running; }
-    public void setPreset(int p) { preset = Math.max(0,Math.min(3,p)); }
+    public void setPreset(int p) { preset = Math.max(0,Math.min(PRESETS.length-1,p)); }
     private void state(String s) { if(listener!=null)listener.onState(s); }
 
     /** Caller must have requested and received RECORD_AUDIO runtime permission. */
@@ -75,12 +85,13 @@ public final class VoiceEngine {
             try{ count=input.read(in,0,in.length); }
             catch(Exception e){ if(running) state("Enregistrement interrompu");break; }
             if(count<=0){if(count<0)state("Le microphone a été interrompu");break;}
-            int energy=0;
+            float energy=0f;
             for(int i=0;i<count;i++){
-                energy |= Math.abs((int)in[i]);
+                energy+=((float)in[i]/32768f)*((float)in[i]/32768f);
                 out[i] = transform(in[i]);
             }
-            if(energy==0){silentSamples+=count;}
+            level=level*.72f+(float)Math.sqrt(energy/Math.max(1,count))*.28f;
+            if(energy<0.0000001f){silentSamples+=count;}
             else {silentSamples=0;}
             if(silentSamples>SAMPLE_RATE*4){
                 state("Aucun son du micro : vérifie si TikTok le monopolise");
@@ -103,9 +114,10 @@ public final class VoiceEngine {
         float inputSample=sample/32768f;
         history[(int)(wrote&(RING-1))]=inputSample;
         int mode=preset;
-        float pitch=mode==0?.68f:(mode==1?.83f:(mode==2?1.21f:1f));
+        float[] voices={.68f,.82f,1.18f,1f,1f,.53f,.91f,.76f};
+        float pitch=1f+(voices[Math.min(mode,voices.length-1)]-1f)*(.45f+depth*.9f);
         float v;
-        if(mode==3 || wrote<5500){v=inputSample;}
+        if(mode==4 || wrote<5500){v=inputSample;}
         else {
             float sweep=2600f;
             phase+=(1f-pitch)/sweep;
@@ -118,22 +130,23 @@ public final class VoiceEngine {
             float b=read(1350f+sweep*other);
             v=w*a+(1f-w)*b;
         }
-        if(mode!=3) {
+        if(mode!=4) {
             float old=echoHistory[echoAt];
             echoHistory[echoAt]=v;
             echoAt=(echoAt+1)&(echoHistory.length-1);
-            float mix=mode==2?0.09f:0.17f;
+            float mix=mode==2?0.09f:(mode==7?.30f:.17f);
             v=v*.92f+old*mix;
-            if(mode==1) v+=.10f*v*(float)Math.sin(2*Math.PI*120*wrote/SAMPLE_RATE);
+            if(mode==1 || mode==6) v+=.10f*v*(float)Math.sin(2*Math.PI*120*wrote/SAMPLE_RATE);
             if(mode==2) v+=.07f*v*(float)Math.sin(2*Math.PI*48*wrote/SAMPLE_RATE);
         }
         wrote++;
+        v=inputSample*(1f-effectMix)+v*effectMix;
         float clipped = v*1.3f;
         clipped=clipped/(1f+Math.abs(clipped)*.4f);
         return (short)(Math.max(-1,Math.min(1,clipped))*32767f);
     }
     public synchronized void stop() {
-        running=false;
+        running=false;level=0f;
         if(input!=null){try{input.stop();}catch(Exception ignored){}}
         Thread t=worker;
         if(t!=null&&t!=Thread.currentThread()){try{t.join(250);}catch(InterruptedException e){Thread.currentThread().interrupt();}}

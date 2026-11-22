@@ -41,6 +41,7 @@ public final class MainActivity extends Activity {
             else {voiceRequested=true;startVoice();}
         });
         voiceButton.setOnLongClickListener(v->{startActivity(new Intent(this,VoiceActivity.class));return true;});
+        findViewById(R.id.buttonVoiceMenu).setOnClickListener(v->startActivity(new Intent(this,VoiceActivity.class)));
         findViewById(R.id.buttonSettings).setOnClickListener(v->startActivity(new Intent(this,SettingsActivity.class)));
         stage.setOnLongClickListener(v->{
             if(full){setLive(false);return true;}
@@ -56,6 +57,8 @@ public final class MainActivity extends Activity {
             requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},101);return;
         }
         voice.setPreset(AlienData.prefs(this).getInt("voicePreset",0));
+        voice.setDepth(AlienData.prefs(this).getInt("voiceDepth",75)/100f);
+        voice.setMix(AlienData.prefs(this).getInt("voiceMix",85)/100f);
         if(voice.start())voiceButton.setText("Arrêter la voix extraterrestre — appui long : réglages");
         else voiceRequested=false;
     }
